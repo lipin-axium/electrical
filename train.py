@@ -209,44 +209,44 @@ def main() -> None:
     device = detect_apple_mps()
     print(f"Using device: {device}")
 
-    run_name = "symbol-detector-final"
+    run_name = "symbol-detector-poc"
     model = YOLO("yolov8m.pt")
     model.train(
         data=str(data_cfg),
-        epochs=200,  # Increased epochs
+        epochs=300,  # More epochs for proof of concept
         imgsz=1280,
-        batch=4,  # Increased batch size
+        batch=8,  # Larger batch size for better convergence
         device=device,
         name=run_name,
-        patience=20,  # Increased patience
-        augment=True,
-        # Enhanced augmentation parameters
-        hsv_h=0.015,  # Increased
-        hsv_s=0.7,    # Increased
-        hsv_v=0.4,    # Increased
-        degrees=15,   # Increased rotation
-        scale=0.5,    # Increased scaling
-        translate=0.2, # Added translation
-        flipud=0.2,   # Added vertical flip
-        fliplr=0.5,   # Increased horizontal flip
-        copy_paste=0.3, # Added copy-paste
-        mosaic=0.5,   # Added mosaic
-        mixup=0.1,    # Added mixup
-        erasing=0.4,  # Added random erasing
-        auto_augment="randaugment", # Better auto augmentation
-        # Loss and optimization
-        cls=5.0,      # Increased classification loss weight
-        box=7.5,      # Box loss weight
-        dfl=1.5,      # DFL loss weight
+        patience=50,  # Much higher patience to ensure convergence
+        augment=False,  # Disable augmentation since we have plenty of augmented data
+        # Minimal augmentation to avoid overfitting
+        hsv_h=0.0,
+        hsv_s=0.0,
+        hsv_v=0.0,
+        degrees=0.0,
+        scale=0.0,
+        translate=0.0,
+        flipud=0.0,
+        fliplr=0.0,
+        copy_paste=0.0,
+        mosaic=0.0,
+        mixup=0.0,
+        erasing=0.0,
+        auto_augment="none",
+        # Optimized loss weights for perfect training accuracy
+        cls=10.0,     # Much higher classification loss weight
+        box=10.0,     # Higher box loss weight
+        dfl=2.0,      # Higher DFL loss weight
         optimizer="AdamW",
-        lr0=0.001,
-        lrf=0.01,     # Final learning rate factor
+        lr0=0.0001,   # Lower learning rate for stable convergence
+        lrf=0.001,    # Very low final learning rate
         momentum=0.937,
-        weight_decay=0.0005,
-        warmup_epochs=5, # Increased warmup
-        # Training settings
+        weight_decay=0.0001,
+        warmup_epochs=10, # More warmup
+        # Training settings optimized for accuracy
         rect=True,
-        workers=2,    # Increased workers
+        workers=4,    # More workers
         plots=True,
         amp=True,     # Enable mixed precision
         project=str(project_root / "runs"),
