@@ -194,20 +194,8 @@ cython_debug/
 *.cfg
 *.names
 
-# Dataset directories (keep structure but ignore large files)
-datasets/*/images/
-# datasets/*/labels/  # Commented out to include label files
-datasets/*/cache/
-datasets/*/*.cache
-datasets/*/train.cache
-datasets/*/val.cache
-datasets/*/test.cache
-
-# Keep dataset structure files
-!datasets/*/data.yaml
-!datasets/*/obj.names
-!datasets/*/obj.data
-!datasets/*/labels/*.txt
+# Dataset directories - ignore everything in datasets/
+datasets/
 
 # Model checkpoints and logs
 checkpoints/
