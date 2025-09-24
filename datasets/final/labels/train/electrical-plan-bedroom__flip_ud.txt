@@ -1,0 +1,1 @@
+/workspace/electrical/datasets/augmented/labels/electrical-plan-bedroom__flip_ud.txt

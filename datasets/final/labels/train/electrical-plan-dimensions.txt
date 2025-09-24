@@ -1,0 +1,1 @@
+/workspace/electrical/datasets/clip/labels/train/electrical-plan-dimensions.txt

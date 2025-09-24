@@ -196,7 +196,7 @@ cython_debug/
 
 # Dataset directories (keep structure but ignore large files)
 datasets/*/images/
-datasets/*/labels/
+# datasets/*/labels/  # Commented out to include label files
 datasets/*/cache/
 datasets/*/*.cache
 datasets/*/train.cache
@@ -207,6 +207,7 @@ datasets/*/test.cache
 !datasets/*/data.yaml
 !datasets/*/obj.names
 !datasets/*/obj.data
+!datasets/*/labels/*.txt
 
 # Model checkpoints and logs
 checkpoints/

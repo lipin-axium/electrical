@@ -1,0 +1,1 @@
+/workspace/electrical/datasets/augmented/labels/electrical-plan-dimensions__blur.txt
