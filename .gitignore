@@ -194,7 +194,20 @@ cython_debug/
 *.cfg
 *.names
 
-# Dataset directories - ignore everything in datasets/
+# Dataset directories - ignore most files but allow images
+datasets/*/labels/
+datasets/*/cache/
+datasets/*/*.cache
+datasets/*/train.cache
+datasets/*/val.cache
+datasets/*/test.cache
+datasets/*/data.yaml
+datasets/*/obj.names
+datasets/*/obj.data
+
+# Allow images in datasets
+!datasets/*/images/
+!datasets/*/images/**
 
 
 # Model checkpoints and logs
@@ -228,6 +241,16 @@ Thumbs.db
 *.tif
 *.gif
 *.webp
+
+# Allow images in datasets
+!datasets/*/images/*.jpg
+!datasets/*/images/*.jpeg
+!datasets/*/images/*.png
+!datasets/*/images/*.bmp
+!datasets/*/images/*.tiff
+!datasets/*/images/*.tif
+!datasets/*/images/*.gif
+!datasets/*/images/*.webp
 
 # Keep some example images for documentation
 !example_*.jpg
