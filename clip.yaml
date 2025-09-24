@@ -1,0 +1,9 @@
+path: datasets/clip
+train: images/train
+val: images/val
+names:
+  - Symbol A
+  - Symbol B
+
+
+

@@ -1,0 +1,6 @@
+path: /workspace/electrical/datasets/clip
+train: images/train
+val: images/train
+names:
+  - Symbol A
+  - Symbol B

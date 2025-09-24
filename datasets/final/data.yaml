@@ -1,0 +1,7 @@
+path: /workspace/electrical/datasets/final
+train: images/train
+val: images/val
+test: images/test
+names:
+  - Symbol A
+  - Symbol B
