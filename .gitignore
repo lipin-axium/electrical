@@ -205,10 +205,6 @@ datasets/*/data.yaml
 datasets/*/obj.names
 datasets/*/obj.data
 
-# Allow images in datasets
-!datasets/*/images/
-!datasets/*/images/**
-
 
 # Model checkpoints and logs
 checkpoints/
@@ -233,7 +229,6 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-*.jpg
 *.jpeg
 *.png
 *.bmp
@@ -242,15 +237,6 @@ Thumbs.db
 *.gif
 *.webp
 
-# Allow images in datasets
-!datasets/*/images/*.jpg
-!datasets/*/images/*.jpeg
-!datasets/*/images/*.png
-!datasets/*/images/*.bmp
-!datasets/*/images/*.tiff
-!datasets/*/images/*.tif
-!datasets/*/images/*.gif
-!datasets/*/images/*.webp
 
 # Keep some example images for documentation
 !example_*.jpg

@@ -19,7 +19,7 @@ def main() -> None:
         name=out_name,
         save=True,
         imgsz=640,
-        verbose=True,
+        verbose=False,
         conf=0.1,
     )
     print(results[0].save_dir)
