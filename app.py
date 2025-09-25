@@ -40,8 +40,8 @@ class BoundingBox:
 # -----------------------------
 
 def get_latest_model_path(project_root: Path) -> Path:
-	runs = sorted((project_root / "runs").glob("symbol-detector-final*/weights/best.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
-	return runs[0] if runs else project_root / "runs" / "symbol-detector-final" / "weights" / "best.pt"
+	runs = sorted((project_root / "runs").glob("symbol-detector-poc*/weights/best.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+	return runs[0] if runs else project_root / "runs" / "symbol-detector-poc" / "weights" / "best.pt"
 
 
 def load_yolo_model(project_root: Path):
@@ -55,9 +55,11 @@ def load_yolo_model(project_root: Path):
 		raise e
 	model_path = get_latest_model_path(project_root)
 	model = YOLO(str(model_path))
-	# Ensure class names explicitly: only two classes
+	# Do not override names; use names from weights
+	# Disable showing confidences in plotted labels to keep style without numbers
 	try:
-		model.names = {0: "Symbol A", 1: "Symbol B"}
+		from ultralytics import settings as yolo_settings  # type: ignore
+		yolo_settings.update({"show_conf": False})
 	except Exception:
 		pass
 	st.session_state.yolo_model = model
@@ -68,8 +70,8 @@ def run_yolo_detection(image: Image.Image) -> Tuple[List[BoundingBox], Dict[str,
 	"""Run YOLO detection on the given PIL image and return boxes, summary, and annotated image."""
 	project_root = Path(__file__).resolve().parent
 	model = load_yolo_model(project_root)
-	# Predict directly from PIL image
-	results = model.predict(source=image, imgsz=640, verbose=False, conf=0.4)
+	# Predict directly from PIL image with same settings as infer.py
+	results = model.predict(source=image, imgsz=1280, verbose=False, conf=0.1)
 	res = results[0]
 
 	# Build boxes
@@ -93,9 +95,9 @@ def run_yolo_detection(image: Image.Image) -> Tuple[List[BoundingBox], Dict[str,
 	for b in boxes:
 		summary[b.label] = summary.get(b.label, 0) + 1
 
-	# Annotated image from result.plot()
+	# Annotated image from result.plot() (confidences hidden via settings)
 	try:
-		plotted = res.plot()
+		plotted = res.plot(conf=False)
 		annotated = Image.fromarray(plotted)
 	except Exception:
 		annotated = image.copy()
@@ -111,6 +113,7 @@ def run_detection(image: Image.Image) -> Tuple[List[BoundingBox], Dict[str, int]
 	"""Legacy simulation (kept for fallback; not used when YOLO is available)."""
 	width, height = image.size
 	possible_classes = ["Symbol A", "Symbol B"]
+	
 	num_detections = random.randint(2, 6)
 	boxes: List[BoundingBox] = []
 	for _ in range(num_detections):
@@ -136,17 +139,28 @@ def run_detection(image: Image.Image) -> Tuple[List[BoundingBox], Dict[str, int]
 		font = None
 	for b in boxes:
 		draw.rectangle([(b.xmin, b.ymin), (b.xmax, b.ymax)], outline=(255, 0, 0), width=3)
-		label_text = f"{b.label} {b.score:.2f}"
+		label_text = f"{b.label}"
+		text_w = int((draw.textlength(label_text, font=font) if hasattr(draw, "textlength") else 8 * len(label_text)))
+		text_h = 14
+		bg_x2 = min(b.xmin + text_w + 6, annotated.width)
+		bg_y2 = min(b.ymin + text_h + 6, annotated.height)
+		draw.rectangle([(b.xmin, b.ymin), (bg_x2, bg_y2)], fill=(0, 0, 0))
 		draw.text((b.xmin + 3, b.ymin + 1), label_text, fill=(255, 255, 255), font=font)
 	return boxes, summary, annotated
 
 
 # -----------------------------
-# OpenAI integration (counts-only)
+# OpenAI integration (conversational floorplan assistant)
 # -----------------------------
 
 def openai_chat_response(query: str, summary: Dict[str, int], history: List[Tuple[str, str]], api_key: str, model: str = "gpt-4o-mini") -> str:
-	"""Use OpenAI to answer about symbol counts ONLY using provided summary."""
+	"""Conversational assistant for floorplans and symbols.
+
+	- Knows: Symbol A = power/data outlet; Symbol B = ceiling light fixture
+	- Uses detection summary for counts
+	- Friendly small talk allowed (hi/thanks/etc.)
+	- If request is unrelated (e.g., code generation), reply: "I don’t have that capability"
+	"""
 	if not api_key:
 		api_key = os.environ.get("OPENAI_API_KEY", "")
 	if not api_key:
@@ -161,25 +175,27 @@ def openai_chat_response(query: str, summary: Dict[str, int], history: List[Tupl
 	summary_lines = [f"- {k}: {v}" for k, v in (summary or {}).items()]
 	summary_block = "\n".join(summary_lines) if summary_lines else "(no detections yet)"
 
-	messages = [
-		{"role": "system", "content": (
-			"You answer ONLY about counts of detected symbols using the provided summary. "
-			"If a class isn't listed, reply exactly: 'I don’t have that info'. "
-			"Be concise. Output plain text, no extra commentary."
-		)},
-	]
-	for role, content in history[-4:]:
+	system_instructions = (
+		"You are a helpful building floorplan assistant. "
+		"Context: Symbol A means power/data outlet. Symbol B means ceiling light fixture. "
+		"Use the provided detection summary for counts when relevant. "
+		"Small talk (greetings, pleasantries) is allowed. Be brief and friendly. "
+		"If the user asks for anything unrelated to floorplans, electrical symbols, or the summary, respond exactly: 'I don’t have that capability'."
+	)
+
+	messages = [{"role": "system", "content": system_instructions}]
+	for role, content in history[-6:]:
 		messages.append({"role": role, "content": content})
 	messages.append({
 		"role": "user",
 		"content": (
 			f"Detection summary (class: count)\n{summary_block}\n\n"
-			f"Question: {query}"
+			f"User: {query}"
 		)
 	})
 
 	try:
-		resp = client.chat.completions.create(model=model, messages=messages, temperature=0.0)
+		resp = client.chat.completions.create(model=model, messages=messages, temperature=0.2)
 		text = (resp.choices[0].message.content or "").strip()
 		return text
 	except Exception:
@@ -226,7 +242,7 @@ def init_session_state() -> None:
 
 
 def main() -> None:
-	st.set_page_config(layout="wide", page_title="Service Key Detection")
+	st.set_page_config(layout="wide", page_title="Floorplan Symbol Detection")
 	init_session_state()
 
 	# Sidebar
@@ -269,8 +285,14 @@ def main() -> None:
 			st.session_state.detection_summary = summary
 			st.session_state.last_detect_time = time.time()
 
-	# Main Title
-	st.title("Service Key Detection")
+	# Company branding and main title
+	col_brand, col_title = st.columns([1, 3])
+	with col_brand:
+		st.markdown("### Axium Industries")
+	with col_title:
+		st.markdown("")
+	
+	st.title("Floorplan Symbol Detection")
 
 	# Two columns for Original and Detected
 	col1, col2 = st.columns(2, gap="large")
